@@ -1,0 +1,2 @@
+description = "Code review changes in current branch"
+prompt = "Please code review all changes in current branch against main or master and provide a summary"
