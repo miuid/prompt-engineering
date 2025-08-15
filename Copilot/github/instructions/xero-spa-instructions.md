@@ -48,8 +48,31 @@ Common XUI components used:
 - `XUIPopover`, `XUIPopoverBody`, `XUIPopoverHeader`, `XUIPopoverFooter` - XUIPopover provides additional information in line with page elements. It is useful for providing information with interactive content, such as a link to another page or an onboarding sequence.
 - `XUIToast`, `XUIToastActions`, `XUIToastMessage`, `XUIToastWrapper` - XUIToast is given a layout class by default with no actionable buttons. The close button is only added when a onCloseClick callback prop is added.
 - `XUITooltip` - provides additional information in-line with page elements.
-
-
+- `XUIBreadcrumbTrail` creates a list of sequenced nav items from a provided array. It is most commonly found in addition to a title in a XUIPageHeader. The array can contain objects used to generate anchor links, or it can contain HTML nodes which will have the xui-breadcrumb--link class added to them. As always, be mindful of accessibility concerns if using non-semantic elements for interactivity.
+- `XUIIsolationHeader` replaces the standard global header for tasks that are part of a focused workflow.
+- `XUIPageHeader` appears beneath the global header on a page. In a basic example, it is a white bar with a title. In more complex cases it could contain a XUIBreadcrumbTrail, a XUIAvatar, a XUITabs to present tabs for organising related content, a XUIPicklist to present navigating between pages with links, or a XUIActions component (and some combinations).
+- `XUIPagination` is a useful and clear way to break up sets of data within a page that could be over an optimum length. An optimum length should be determined by things like digestibility, performance, data usage, screen real estate and sensible URL schema.
+- `XUIStepper` renders a set of steps and a content area corresponding to the currently active step.
+- `XUIFixedFooter` is an empty white bar with a top-edge shadow that remains fixed to the bottom of the viewport and prevents nearby elements from getting hidden behind it.
+- `XUIAutocompleter` is a component that composes many other components together. It's an input where users can type to filter a list of items to select.
+- `XUIDatePicker` is a date select component
+- `XUIDateInput` and `XUIDateRangeInput` are an experimental components for selecting dates. They combine XUITextInput for keyboard interaction and XUIDatePicker for selecting dates from a calendar.
+- `XUIDropdown` dropdown component
+- `XUIDropdownToggled` connects the trigger element with the dropdown, in terms of behavior and wrapping the two elements for positioning.
+- `XUIDropdownHeader` and `XUIDropdownFooter` are used to add a fixed header and/or footer element to dropdowns. These elements don't scroll with the rest of the list, and are ignored by the default arrow key handlers. Add these components via the header and footer props in XUIDropdown.
+- `XUINestedDropdown` is designed as a XUIDropdown replacement that allows consumers to implement small, multi-step flows inside of a triggered dropdown. A quick example would be allowing the user to choose between some suggested dates and a fixed custom date like below.
+- `XUIForm` is a component that wraps a group of form inputs, and provides a React Context that sets default properties on the fields. Note you must still markup the inputs as required where applicable.
+- `XUIModal`, `XUIModalHeader`, `XUIModalHeading`, `XUIModalFooter` provides a container for custom content, along with a background mask. They should primarily be used for prompting user actions, such as confirming a change, providing additional information, or copying some text.
+- `XUIAccordion`, `XUIAccordionItem` are used to display a vertically expandable & collapsible list that reveals and hides additional content
+- `XUIContentBlock` components are typically used inside a Panel to display a simplified top-level view for a detailed sub page, often containing quick access to actions. If you are not using them inside a XUIPanel component, we recommend applying the xui-panel class to the `XUIContentBlock`, as per the examples below. Any content should be placed inside a `XUIContentBlockItem` component.
+- `XUIEditableTable` are used to display sets of static or interactive data in a way that’s easy for the user to scan, organise, and manipulate.
+- `XUIFilePreview` will fill its wrapping container with a header, footer, and body area to display a file preview. XUIFilePreviewHeader has an API very similar to XUIIsolationHeader, and XUIFilePreviewFooter can be populated with the recommended preview controls. We've shown a responsive toolbar that stows some preview control buttons (aligned to the left) behind an overflow menu at narrow widths, alongside a pagination component (aligned to the right).
+- `XUIOverviewBlock` components are used to show a top-level summary of stats and figures. They should contain at least one and no more than six `XUIOverviewSection` components.
+- `XUIPanel` are top-level containers for grouping page content. XUIPanel can optionally accept XUIPanelHeader and XUIPanelFooter components as props, as well as content designated as a sidebar. XUIPanelHeading and XUIPanelSectionHeading components can also be passed through as the first child component of XUIPanel and XUIPanelSection respectively, if required.
+- `XUIPicklist` is set of components that brings in the XUI styles to render a list of items. XUIPicklist and XUIPickitems are presentational components, and XUIStatefulPicklist is a wrapper available to handle keyboard navigation.
+- `XUITable`, `XUITableColumn`, `XUITableCell` The Table scaffold is a convenient way to lay out data sets with an accessible and responsive design mindset.
+- `XUITabs` A set of tab elements and their tab panels
+- `XUICompositionDetail`, `XUICompositionDetailSummary`, `XUICompositionMasterDetail`, `XUICompositionMasterDetailSummary`, `XUICompositionSplit` are compositions for divide screen to master (left side navigation) and detail (right side content) view.
 
 ## File Structure and Patterns
 
