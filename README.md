@@ -4,6 +4,10 @@ This is a project the collect useful and smart LLM prompts
 
 # References
 
+## Awesome Copilot
+
+- https://github.com/miuid/awesome-copilot
+
 ## Claude Agents
 
 - https://github.com/miuid/claude-agents
