@@ -4,6 +4,10 @@ This is a project the collect useful and smart LLM prompts
 
 # References
 
+## Claude Best Practices
+
+- https://www.anthropic.com/engineering/claude-code-best-practices
+
 ## Awesome Copilot
 
 - https://github.com/miuid/awesome-copilot
