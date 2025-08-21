@@ -1,0 +1,475 @@
+# SPA Architecture Patterns
+
+## Overview
+Guide for React TypeScript SPA development patterns, file structure, and conventions used in Xero applications.
+
+## Quick Reference
+```bash
+# Development Commands
+yarn start          # Start development server
+yarn test          # Run tests
+yarn test:watch    # Run tests in watch mode
+yarn storybook     # Start Storybook
+yarn build         # Build for production
+```
+
+## Tech Stack
+- React 18+
+- TypeScript 5+
+- Redux Toolkit
+- React Router 6+
+- React Intl
+- Sass/SCSS with CSS Modules
+- Jest + React Testing Library
+- Playwright (E2E)
+- Webpack 5
+- ESLint + Prettier
+
+## File Structure
+
+### Project Organization
+```
+src/
+├── actions/           # Redux action creators
+├── api/              # API service layer
+├── components/       # React components
+│   ├── functional/   # Reusable functional components
+│   └── routes/       # Route-specific components
+├── constants/        # Application constants
+├── helpers/          # Utility functions and helpers
+├── hooks/           # Custom React hooks
+├── locales/         # Internationalization messages
+├── models/          # TypeScript interfaces and types
+├── reducers/        # Redux reducers
+├── sagas/           # Redux-Saga middleware
+├── selectors/       # Redux state selectors
+└── test-utils/      # Testing utilities
+```
+
+### Component Organization
+- **Routes**: `src/components/routes` - Page-level components
+- **Functional**: `src/components/functional` - Reusable UI components
+- **Shared Layout**: `src/components/functional/SharedLayout` - Main app layout wrapper
+
+## Component Patterns
+
+### Component Creation Pattern
+```tsx
+import React from "react";
+import { useIntl } from "react-intl";
+import { useSelector } from "react-redux";
+
+import { componentClassName } from "~helpers";
+import * as selectors from "~selectors";
+
+import "./ComponentName.scss";
+
+export const createClass = componentClassName("ComponentName");
+
+interface IProps {
+  propertyName: string;
+  optionalProperty?: number;
+}
+
+const ComponentName = ({ propertyName, optionalProperty }: IProps) => {
+  const { formatMessage } = useIntl();
+
+  return (
+    <div className={createClass()}>
+      {/* Component content */}
+    </div>
+  );
+};
+
+export default ComponentName;
+```
+
+### Component File Structure
+```
+ComponentName/
+├── ComponentName.tsx          # Main component
+├── ComponentName.test.tsx     # Unit tests
+├── ComponentName.scss         # Component styles
+├── ComponentName.stories.tsx  # Storybook stories (optional)
+└── index.ts                  # Export file
+```
+
+### Smart vs Dumb Components
+- **Smart Components**: Handle state and business logic
+- **Dumb Components**: Focus on presentation only
+- Use Redux state over local state for application data
+- Keep components small and focused
+
+## State Management Patterns
+
+### Redux Structure
+```typescript
+// Actions
+import { createAction } from "@reduxjs/toolkit";
+
+export const fetchDataRequest = createAction("feature/fetchDataRequest");
+export const fetchDataSuccess = createAction<Data[]>("feature/fetchDataSuccess");
+export const fetchDataFailure = createAction<string>("feature/fetchDataFailure");
+
+// Reducers
+import { createSlice } from "@reduxjs/toolkit";
+
+const featureSlice = createSlice({
+  name: "feature",
+  initialState,
+  reducers: {
+    // synchronous reducers
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchDataRequest, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchDataSuccess, (state, action) => {
+        state.isLoading = false;
+        state.data = action.payload;
+      });
+  },
+});
+
+// Selectors
+import { createSelector } from "@reduxjs/toolkit";
+
+export const selectFeatureData = (state: RootState) => state.feature.data;
+export const selectFilteredData = createSelector(
+  [selectFeatureData, selectFilters],
+  (data, filters) => data.filter(/* filter logic */)
+);
+```
+
+### State Organization
+```typescript
+interface FeatureState {
+  entities: {
+    [id: string]: FeatureEntity;
+  };
+  ui: {
+    isLoading: boolean;
+    selectedId: string | null;
+    filters: FilterState;
+    modal: ModalState;
+  };
+  errors: {
+    general: string | null;
+    validation: ValidationErrors;
+  };
+}
+```
+
+## API Integration Patterns
+
+### Service Layer
+```typescript
+// api/feature.api.ts
+export const fetchFeatureData = async (params: FetchParams): Promise<Data[]> => {
+  const response = await fetch(`/api/features?${new URLSearchParams(params)}`);
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// Sagas
+import { call, put, takeLatest } from "redux-saga/effects";
+
+function* fetchFeatureDataSaga(action: ReturnType<typeof fetchDataRequest>) {
+  try {
+    const data = yield call(fetchFeatureData, action.payload);
+    yield put(fetchDataSuccess(data));
+  } catch (error) {
+    yield put(fetchDataFailure(error.message));
+  }
+}
+
+export function* featureSaga() {
+  yield takeLatest(fetchDataRequest.type, fetchFeatureDataSaga);
+}
+```
+
+## Routing Patterns
+
+### Route Configuration
+```typescript
+// constants/routes.constants.ts
+export const ROUTES = {
+  HOME: "/",
+  FEATURE: "/feature",
+  FEATURE_DETAIL: "/feature/:id",
+  FEATURE_CREATE: "/feature/create",
+} as const;
+
+// Route components
+const FeatureRoute = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
+  return (
+    <div>
+      {/* Route content */}
+    </div>
+  );
+};
+```
+
+### Route Guards
+```typescript
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, navigate]);
+
+  return isAuthenticated ? <>{children}</> : null;
+};
+```
+
+## Styling Patterns
+
+### SCSS Organization
+```scss
+// ComponentName.scss
+@import "~styles/variables";
+
+.component-name {
+  // Component styles
+
+  &--modifier {
+    // Modifier styles
+  }
+
+  &__element {
+    // Element styles
+  }
+}
+
+// Use XUI classes
+.xui-margin-small {
+  margin: var(--xui-spacing-small);
+}
+
+.xui-padding-large {
+  padding: var(--xui-spacing-large);
+}
+```
+
+### CSS Modules
+- Use `.module.scss` for component-specific styles
+- Import styles as objects: `import styles from "./Component.module.scss"`
+- Use with `className={styles.componentName}`
+
+## Testing Patterns
+
+### Component Testing
+```typescript
+import { Wrapper, screen } from "~test-utils";
+import ComponentName from "./ComponentName";
+
+const component = new Wrapper(ComponentName).withDefaultProps({
+  propertyName: "test value",
+});
+
+describe("<ComponentName />", () => {
+  it("renders the component", () => {
+    component.render();
+    expect(screen.getByText("Expected Text")).toBeInTheDocument();
+  });
+
+  it("handles user interactions", () => {
+    component.render();
+    fireEvent.click(screen.getByRole("button"));
+    expect(mockFunction).toHaveBeenCalled();
+  });
+});
+```
+
+### Redux State Testing
+```typescript
+component
+  .withReduxState({
+    feature: {
+      data: mockData,
+      isLoading: false
+    }
+  })
+  .render();
+```
+
+### API Testing
+```typescript
+// Use MSW for API mocking
+import { rest } from "msw";
+import { setupServer } from "msw/node";
+
+const server = setupServer(
+  rest.get("/api/features", (req, res, ctx) => {
+    return res(ctx.json(mockData));
+  })
+);
+```
+
+## Internationalization Patterns
+
+### Message Keys
+```typescript
+// locales/en-NZ.json
+{
+  "FEATURE_PAGE_TITLE": "Feature Management",
+  "FEATURE_CREATE_BUTTON": "Create New Feature",
+  "FEATURE_VALIDATION_REQUIRED": "This field is required"
+}
+
+// Component usage
+import { FormattedMessage, useIntl } from "react-intl";
+
+// Method 1: Component approach
+<FormattedMessage id="FEATURE_PAGE_TITLE" />
+
+// Method 2: Hook approach
+const { formatMessage } = useIntl();
+const text = formatMessage({ id: "FEATURE_PAGE_TITLE" });
+
+// With values
+<FormattedMessage
+  id="FEATURE_COUNT"
+  values={{ count: featuresCount }}
+/>
+```
+
+### External Links
+```typescript
+import { link } from "@xero/spa-boilerplate-tools";
+
+<FormattedMessage
+  id="EXTERNAL_LINK_TEXT"
+  values={{
+    a: link(url, { target: "_blank" })
+  }}
+/>
+```
+
+## Error Handling Patterns
+
+### Error Boundaries
+```typescript
+class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Error caught by boundary:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ErrorRoute />;
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+### API Error Handling
+```typescript
+const handleApiError = (error: unknown) => {
+  if (error instanceof Error) {
+    // Handle specific error types
+    if (error.message.includes("401")) {
+      // Handle unauthorized
+    } else if (error.message.includes("404")) {
+      // Handle not found
+    }
+  }
+
+  // Generic error handling
+  console.error("API Error:", error);
+};
+```
+
+## Performance Patterns
+
+### React Optimization
+```typescript
+// Use React.memo for expensive components
+const ExpensiveComponent = React.memo(({ data }: Props) => {
+  return <div>{/* expensive rendering */}</div>;
+});
+
+// Use useMemo for expensive calculations
+const expensiveValue = useMemo(() => {
+  return data.filter(/* complex filtering */);
+}, [data]);
+
+// Use useCallback for stable function references
+const handleClick = useCallback(() => {
+  // click handler
+}, [dependencies]);
+```
+
+### Bundle Optimization
+- Use dynamic imports for code splitting
+- Import only needed components from libraries
+- Use tree shaking for unused code elimination
+
+## Best Practices
+
+### Code Quality
+- Use TypeScript strict mode
+- Avoid `any` type - use proper interfaces
+- Follow ESLint rules and Prettier formatting
+- Use path aliases (`~`) for clean imports
+- Implement proper prop validation
+
+### Security
+- Sanitize user inputs
+- Use HTTPS in production
+- Follow OWASP guidelines
+- Implement proper authentication/authorization
+
+### Accessibility
+- Follow WCAG guidelines
+- Use proper ARIA labels
+- Ensure keyboard navigation
+- Test with screen readers
+
+## Anti-Patterns
+
+### ❌ Don't
+- Mix business logic with presentation components
+- Create deeply nested component hierarchies
+- Ignore TypeScript warnings
+- Skip prop validation
+- Hardcode strings (use i18n)
+- Forget to handle loading and error states
+- Use inline styles instead of CSS classes
+
+### ✅ Do
+- Keep components small and focused
+- Use TypeScript interfaces for all props
+- Implement proper error boundaries
+- Write comprehensive tests
+- Use semantic HTML elements
+- Follow established naming conventions
+- Handle all possible states (loading, error, success)
+
+description:
+globs:
+alwaysApply: false
+---

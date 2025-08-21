@@ -1,0 +1,556 @@
+# Testing Strategies & Patterns
+
+## Overview
+Comprehensive guide for testing React TypeScript SPAs using Jest, React Testing Library, and Playwright.
+
+## Quick Reference
+```bash
+# Testing Commands
+yarn test              # Run all tests
+yarn test:watch        # Run tests in watch mode
+yarn test:coverage     # Run tests with coverage
+yarn test:e2e          # Run Playwright E2E tests
+yarn test:debug        # Run tests in debug mode
+```
+
+## Testing Stack
+- **Jest** - Test runner and assertion library
+- **React Testing Library** - Component testing utilities
+- **Playwright** - End-to-end testing
+- **MSW (Mock Service Worker)** - API mocking
+- **@testing-library/jest-dom** - Custom Jest matchers
+
+## Test File Organization
+
+### File Naming Conventions
+```
+ComponentName.test.tsx          # Component tests
+hookName.test.ts               # Hook tests
+apiName.api.test.ts            # API tests
+utilsName.test.ts              # Utility function tests
+```
+
+### Test Structure
+```typescript
+import { Wrapper, screen, fireEvent } from "~test-utils";
+import ComponentName from "./ComponentName";
+
+const component = new Wrapper(ComponentName);
+
+describe("<ComponentName />", () => {
+  beforeEach(() => {
+    // Setup before each test
+  });
+
+  afterEach(() => {
+    // Cleanup after each test
+  });
+
+  it("renders correctly", () => {
+    component.render();
+    expect(screen.getByText("Expected Text")).toBeInTheDocument();
+  });
+
+  it("handles user interactions", () => {
+    component.render();
+    fireEvent.click(screen.getByRole("button"));
+    expect(mockFunction).toHaveBeenCalled();
+  });
+});
+```
+
+## Component Testing Patterns
+
+### Basic Component Test
+```typescript
+import { Wrapper, screen } from "~test-utils";
+import ComponentName from "./ComponentName";
+
+const component = new Wrapper(ComponentName).withDefaultProps({
+  title: "Test Title",
+  isVisible: true,
+});
+
+describe("<ComponentName />", () => {
+  it("renders with default props", () => {
+    component.render();
+    expect(screen.getByText("Test Title")).toBeInTheDocument();
+  });
+
+  it("renders when visible", () => {
+    component.withProps({ isVisible: true }).render();
+    expect(screen.getByText("Test Title")).toBeVisible();
+  });
+
+  it("does not render when hidden", () => {
+    component.withProps({ isVisible: false }).render();
+    expect(screen.queryByText("Test Title")).not.toBeInTheDocument();
+  });
+});
+```
+
+### Component with Redux State
+```typescript
+import { Wrapper, screen } from "~test-utils";
+import ComponentName from "./ComponentName";
+
+const mockReduxState = {
+  feature: {
+    data: [{ id: "1", name: "Test Item" }],
+    isLoading: false,
+    error: null,
+  },
+};
+
+const component = new Wrapper(ComponentName)
+  .withDefaultProps({})
+  .withReduxState(mockReduxState);
+
+describe("<ComponentName />", () => {
+  it("displays data from Redux state", () => {
+    component.render();
+    expect(screen.getByText("Test Item")).toBeInTheDocument();
+  });
+
+  it("shows loading state", () => {
+    component
+      .withReduxState({
+        feature: { ...mockReduxState.feature, isLoading: true },
+      })
+      .render();
+    expect(screen.getByLabelText("Loading...")).toBeInTheDocument();
+  });
+});
+```
+
+### Component with Router
+```typescript
+import { Wrapper, screen } from "~test-utils";
+import { MemoryRouter } from "react-router-dom";
+import ComponentName from "./ComponentName";
+
+const component = new Wrapper(ComponentName)
+  .withDefaultProps({})
+  .withRouter({ initialEntries: ["/test-path"] });
+
+describe("<ComponentName />", () => {
+  it("renders with router context", () => {
+    component.render();
+    expect(screen.getByText("Component Content")).toBeInTheDocument();
+  });
+});
+```
+
+### Component with Intl
+```typescript
+import { Wrapper, screen } from "~test-utils";
+import ComponentName from "./ComponentName";
+
+const component = new Wrapper(ComponentName)
+  .withDefaultProps({})
+  .withIntl({ locale: "en-NZ" });
+
+describe("<ComponentName />", () => {
+  it("displays internationalized text", () => {
+    component.render();
+    expect(screen.getByText("Expected i18n Text")).toBeInTheDocument();
+  });
+});
+```
+
+## Hook Testing Patterns
+
+### Custom Hook Test
+```typescript
+import { renderHook, act } from "@testing-library/react";
+import { useCustomHook } from "./useCustomHook";
+
+describe("useCustomHook", () => {
+  it("returns initial state", () => {
+    const { result } = renderHook(() => useCustomHook());
+
+    expect(result.current.value).toBe(initialValue);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("updates state when action is called", async () => {
+    const { result } = renderHook(() => useCustomHook());
+
+    await act(async () => {
+      await result.current.updateValue("new value");
+    });
+
+    expect(result.current.value).toBe("new value");
+  });
+});
+```
+
+### Hook with Redux
+```typescript
+import { renderHook } from "@testing-library/react";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+import { useCustomHook } from "./useCustomHook";
+
+const createTestStore = (initialState = {}) => {
+  return configureStore({
+    reducer: {
+      feature: featureReducer,
+    },
+    preloadedState: initialState,
+  });
+};
+
+describe("useCustomHook", () => {
+  it("selects data from Redux state", () => {
+    const store = createTestStore({
+      feature: { data: ["test"], isLoading: false },
+    });
+
+    const { result } = renderHook(() => useCustomHook(), {
+      wrapper: ({ children }) => (
+        <Provider store={store}>{children}</Provider>
+      ),
+    });
+
+    expect(result.current.data).toEqual(["test"]);
+  });
+});
+```
+
+## API Testing Patterns
+
+### API Method Test
+```typescript
+import { fetchData } from "./api";
+import { rest } from "msw";
+import { setupServer } from "msw/node";
+
+const server = setupServer(
+  rest.get("/api/data", (req, res, ctx) => {
+    return res(ctx.json({ data: "test" }));
+  })
+);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+describe("fetchData", () => {
+  it("fetches data successfully", async () => {
+    const result = await fetchData();
+
+    expect(result).toEqual({ data: "test" });
+  });
+
+  it("handles API errors", async () => {
+    server.use(
+      rest.get("/api/data", (req, res, ctx) => {
+        return res(ctx.status(500));
+      })
+    );
+
+    await expect(fetchData()).rejects.toThrow("HTTP error! status: 500");
+  });
+});
+```
+
+### Saga Testing
+```typescript
+import { SagaTester } from "~test-utils";
+import { fetchDataSaga } from "./sagas";
+import { fetchDataRequest, fetchDataSuccess, fetchDataFailure } from "./actions";
+
+describe("fetchDataSaga", () => {
+  let sagaTester: SagaTester;
+
+  beforeEach(() => {
+    sagaTester = new SagaTester({});
+  });
+
+  it("handles successful data fetch", async () => {
+    const mockData = [{ id: "1", name: "Test" }];
+
+    sagaTester
+      .given(fetchDataRequest())
+      .when(fetchDataSaga)
+      .then(fetchDataSuccess(mockData))
+      .run();
+  });
+
+  it("handles API errors", async () => {
+    const error = new Error("API Error");
+
+    sagaTester
+      .given(fetchDataRequest())
+      .when(fetchDataSaga)
+      .then(fetchDataFailure(error.message))
+      .run();
+  });
+});
+```
+
+## Redux Testing Patterns
+
+### Action Tests
+```typescript
+import { fetchDataRequest, fetchDataSuccess, fetchDataFailure } from "./actions";
+
+describe("actions", () => {
+  it("creates fetchDataRequest action", () => {
+    const action = fetchDataRequest();
+    expect(action.type).toBe("feature/fetchDataRequest");
+  });
+
+  it("creates fetchDataSuccess action with payload", () => {
+    const data = [{ id: "1" }];
+    const action = fetchDataSuccess(data);
+
+    expect(action.type).toBe("feature/fetchDataSuccess");
+    expect(action.payload).toEqual(data);
+  });
+});
+```
+
+### Reducer Tests
+```typescript
+import featureReducer, { initialState } from "./reducer";
+import { fetchDataRequest, fetchDataSuccess, fetchDataFailure } from "./actions";
+
+describe("featureReducer", () => {
+  it("returns initial state", () => {
+    expect(featureReducer(undefined, { type: "unknown" })).toEqual(initialState);
+  });
+
+  it("handles fetchDataRequest", () => {
+    const state = featureReducer(initialState, fetchDataRequest());
+
+    expect(state.isLoading).toBe(true);
+    expect(state.error).toBe(null);
+  });
+
+  it("handles fetchDataSuccess", () => {
+    const data = [{ id: "1" }];
+    const state = featureReducer(
+      { ...initialState, isLoading: true },
+      fetchDataSuccess(data)
+    );
+
+    expect(state.isLoading).toBe(false);
+    expect(state.data).toEqual(data);
+  });
+});
+```
+
+### Selector Tests
+```typescript
+import { selectFeatureData, selectFilteredData } from "./selectors";
+
+describe("selectors", () => {
+  const mockState = {
+    feature: {
+      data: [{ id: "1", name: "Test" }],
+      isLoading: false,
+    },
+  };
+
+  it("selects feature data", () => {
+    const result = selectFeatureData(mockState);
+    expect(result).toEqual([{ id: "1", name: "Test" }]);
+  });
+
+  it("selects filtered data", () => {
+    const result = selectFilteredData(mockState, "Test");
+    expect(result).toEqual([{ id: "1", name: "Test" }]);
+  });
+});
+```
+
+## E2E Testing with Playwright
+
+### Basic E2E Test
+```typescript
+import { test, expect } from "@playwright/test";
+
+test("user can complete onboarding flow", async ({ page }) => {
+  await page.goto("/onboarding");
+
+  // Fill business details
+  await page.fill('[data-testid="business-name"]', "Test Business");
+  await page.fill('[data-testid="abn"]', "12345678901");
+  await page.click('[data-testid="continue-button"]');
+
+  // Verify navigation to next step
+  await expect(page).toHaveURL("/onboarding/individual-details");
+  await expect(page.locator('[data-testid="step-indicator"]')).toContainText("Step 2");
+});
+```
+
+### API Mocking in E2E
+```typescript
+import { test, expect } from "@playwright/test";
+
+test("displays data from API", async ({ page }) => {
+  // Mock API response
+  await page.route("/api/businesses", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify([{ id: "1", name: "Test Business" }]),
+    });
+  });
+
+  await page.goto("/businesses");
+  await expect(page.locator('[data-testid="business-list"]')).toContainText("Test Business");
+});
+```
+
+## Test Utilities
+
+### Custom Test Helpers
+```typescript
+// test-utils/helpers.ts
+export const createMockUser = (overrides = {}) => ({
+  id: "user-1",
+  name: "Test User",
+  email: "test@example.com",
+  ...overrides,
+});
+
+export const createMockBusiness = (overrides = {}) => ({
+  id: "business-1",
+  name: "Test Business",
+  abn: "12345678901",
+  ...overrides,
+});
+
+export const waitForLoadingToFinish = async (screen) => {
+  await waitForElementToBeRemoved(() => screen.getByLabelText("Loading..."));
+};
+```
+
+### MSW Setup
+```typescript
+// test-utils/msw.ts
+import { rest } from "msw";
+import { setupServer } from "msw/node";
+
+export const handlers = [
+  rest.get("/api/businesses", (req, res, ctx) => {
+    return res(ctx.json([{ id: "1", name: "Test Business" }]));
+  }),
+
+  rest.post("/api/businesses", (req, res, ctx) => {
+    return res(ctx.json({ id: "2", name: "New Business" }));
+  }),
+];
+
+export const server = setupServer(...handlers);
+```
+
+## Testing Best Practices
+
+### Test Organization
+- Group related tests using `describe` blocks
+- Use descriptive test names that explain the behavior
+- Keep tests independent and isolated
+- Use `beforeEach` and `afterEach` for setup/cleanup
+
+### Assertions
+- Test behavior, not implementation
+- Use semantic queries (getByRole, getByLabelText)
+- Avoid testing implementation details
+- Use meaningful assertions
+
+### Mocking
+- Mock external dependencies (APIs, services)
+- Use MSW for API mocking
+- Mock only what's necessary
+- Keep mocks simple and realistic
+
+### Coverage
+- Aim for high test coverage (80%+)
+- Focus on critical user paths
+- Test error scenarios and edge cases
+- Don't test trivial code
+
+## Common Testing Patterns
+
+### Form Testing
+```typescript
+it("submits form with valid data", async () => {
+  component.render();
+
+  fireEvent.change(screen.getByLabelText("Business Name"), {
+    target: { value: "Test Business" },
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+
+  await waitFor(() => {
+    expect(mockSubmitFunction).toHaveBeenCalledWith({
+      name: "Test Business",
+    });
+  });
+});
+```
+
+### Modal Testing
+```typescript
+it("opens and closes modal", () => {
+  component.render();
+
+  // Modal should be closed initially
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+  // Open modal
+  fireEvent.click(screen.getByRole("button", { name: "Open Modal" }));
+  expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+  // Close modal
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+});
+```
+
+### Async Testing
+```typescript
+it("loads data asynchronously", async () => {
+  component.render();
+
+  // Show loading state
+  expect(screen.getByLabelText("Loading...")).toBeInTheDocument();
+
+  // Wait for data to load
+  await waitFor(() => {
+    expect(screen.getByText("Loaded Data")).toBeInTheDocument();
+  });
+
+  // Loading should be hidden
+  expect(screen.queryByLabelText("Loading...")).not.toBeInTheDocument();
+});
+```
+
+## Anti-Patterns
+
+### ❌ Don't
+- Test implementation details
+- Use brittle selectors (class names, IDs)
+- Test multiple things in one test
+- Mock everything
+- Ignore async operations
+- Test trivial code
+- Use shallow rendering for integration tests
+
+### ✅ Do
+- Test user behavior and interactions
+- Use semantic queries and accessible attributes
+- Write focused, single-purpose tests
+- Mock only external dependencies
+- Handle async operations properly
+- Focus on critical paths and edge cases
+- Use integration tests for component interactions
+description:
+globs:
+alwaysApply: false
+---

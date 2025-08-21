@@ -1,0 +1,184 @@
+# XUI Component Library
+
+## Overview
+Guide for using Xero's XUI component library in React TypeScript applications.
+
+## Quick Reference
+```bash
+# Import patterns
+import { XUIButton } from "@xero/xui/react/button";
+import { XUIModal, XUIModalHeader, XUIModalBody, XUIModalFooter } from "@xero/xui/react/modal";
+import { XUITextInput } from "@xero/xui/react/textinput";
+```
+
+## Core Components
+
+### Layout & Structure
+- `XUIContentBlock`, `XUIContentBlockItem` - Content containers
+- `XUIRow`, `XUIColumn` - Grid layout
+- `XUIPanel`, `XUIPanelHeader`, `XUIPanelFooter` - Top-level containers
+- `XUIPageHeader` - Page headers with breadcrumbs, avatars, tabs
+- `XUIFixedFooter` - Fixed bottom bar with shadow
+
+### Interactive Elements
+- `XUIButton` - Primary action buttons
+- `XUIButtonGroup` - Grouped related buttons
+- `XUISplitButtonGroup` - Primary action with secondary dropdown
+- `XUIIconButton` - Icon-only buttons
+- `XUIActionMenu`, `XUIActionMenuIconButtonTrigger` - Action menus
+- `XUIActions` - Button wrappers for modals, headers, panels
+
+### Form Controls
+- `XUITextInput` - Text input with validation support
+- `XUISelectBox`, `XUISingleSelect` - Dropdown selections
+- `XUISelectBoxOption` - Dropdown options
+- `XUICheckbox`, `XUICheckboxGroup` - Checkbox controls
+- `XUIRadio`, `XUIRadioGroup` - Radio button controls
+- `XUISwitch`, `XUISwitchGroup` - Toggle switches
+- `XUIRange` - Range sliders
+- `XUIFileUploader` - File upload interface
+- `XUIRolloverCheckbox` - Hover-to-reveal checkboxes
+- `XUIControlGroup` - Group multiple controls
+- `XUIForm` - Form wrapper with context
+
+### Data Display
+- `XUITable`, `XUITableColumn`, `XUITableCell` - Data tables
+- `XUIEditableTable` - Interactive tables
+- `XUIPicklist`, `XUIPickitems` - List selections
+- `XUIAutocompleter` - Searchable dropdown
+- `XUIPagination` - Page navigation
+- `XUIStepper` - Step indicators
+- `XUITabs` - Tab navigation
+
+### Feedback & Status
+- `XUILoader` - Loading indicators
+- `XUIProgressCircular`, `XUIProgressLinear` - Progress bars
+- `XUIBanner`, `XUIBannerActions`, `XUIBannerMessage` - Status banners
+- `XUIToast`, `XUIToastActions`, `XUIToastMessage` - Toast notifications
+- `XUIPopover`, `XUIPopoverBody`, `XUIPopoverHeader` - Contextual info
+- `XUITooltip` - Hover tooltips
+
+### Visual Elements
+- `XUIIcon` - Icons (import icon paths for standardized viewbox)
+- `XUIIllustration` - Centralized illustrations
+- `XUIAvatar`, `XUIAvatarGroup` - User/business avatars
+- `XUICapsule` - Data placeholders
+- `XUIPill` - Selection indicators
+- `XUITag` - Content categorization
+
+### Navigation
+- `XUIBreadcrumbTrail` - Page navigation breadcrumbs
+- `XUIIsolationHeader` - Focused workflow headers
+- `XUIDropdown`, `XUIDropdownToggled` - Dropdown menus
+- `XUINestedDropdown` - Multi-step dropdown flows
+
+### Modals & Overlays
+- `XUIModal`, `XUIModalHeader`, `XUIModalHeading`, `XUIModalFooter` - Modal dialogs
+- `XUIAccordion`, `XUIAccordionItem` - Expandable content
+
+### Date & Time
+- `XUIDatePicker` - Date selection
+- `XUIDateInput`, `XUIDateRangeInput` - Date inputs (experimental)
+
+### Layout Compositions
+- `XUICompositionDetail`, `XUICompositionMasterDetail` - Master-detail layouts
+- `XUICompositionSplit` - Split screen layouts
+- `XUIOverviewBlock`, `XUIOverviewSection` - Summary statistics
+
+## Common Patterns
+
+### Modal Implementation
+```tsx
+import XUIModal, { XUIModalBody, XUIModalHeader, XUIModalFooter } from "@xero/xui/react/modal";
+
+const Modal = ({ isOpen, onClose }) => (
+  <XUIModal isOpen={isOpen} onClose={onClose}>
+    <XUIModalHeader title="Modal Title" />
+    <XUIModalBody>{/* content */}</XUIModalBody>
+    <XUIModalFooter>{/* actions */}</XUIModalFooter>
+  </XUIModal>
+);
+```
+
+### Form Handling
+```tsx
+import XUIForm from "@xero/xui/react/form";
+
+const FormComponent = () => (
+  <XUIForm onSubmit={handleSubmit}>
+    <XUITextInput
+      name="fieldName"
+      label="Field Label"
+      isRequired
+      inputProps={{ placeholder: "Enter value" }}
+    />
+  </XUIForm>
+);
+```
+
+### Loading States
+```tsx
+import XUILoader from "@xero/xui/react/loader";
+
+const LoadingComponent = () => (
+  <XUILoader ariaLabel="Loading..." />
+);
+```
+
+### Icon Usage
+```tsx
+import { XUIIcon } from "@xero/xui/react/icon";
+import { IconCheck } from "@xero/xui/react/icon/paths";
+
+// Standardized viewbox sizing
+<XUIIcon icon={IconCheck} />
+
+// Icon-specific sizing
+<XUIIcon icon={IconCheck} size="large" />
+```
+
+## Best Practices
+
+### Accessibility
+- Always provide `ariaLabel` for loaders and interactive elements
+- Use semantic HTML elements within XUI components
+- Ensure proper keyboard navigation support
+- Add descriptive labels for form controls
+
+### Performance
+- Import only needed components to reduce bundle size
+- Use React.memo for expensive components
+- Avoid unnecessary re-renders with proper prop management
+
+### Styling
+- Use XUI's built-in spacing classes: `xui-margin-small`, `xui-padding-large`
+- Prefer XUI components over custom CSS when possible
+- Use component-specific SCSS modules for custom styling
+- Follow XUI design system patterns
+
+### Form Validation
+- Use `isRequired` prop for required fields
+- Implement proper error handling and display
+- Use `inputProps` for additional HTML attributes
+- Group related controls with `XUIControlGroup`
+
+## Anti-Patterns
+
+### ❌ Don't
+- Mix XUI components with custom HTML elements unnecessarily
+- Override XUI component styles without good reason
+- Use XUI components for non-standard use cases
+- Forget accessibility attributes
+- Import entire XUI library instead of specific components
+
+### ✅ Do
+- Use XUI components for their intended purposes
+- Follow XUI design patterns and spacing
+- Implement proper accessibility features
+- Import only required components
+- Use XUI's built-in responsive behavior
+- Use xui-mcp-server MCP to find details of usage of each component
+description:
+globs:
+alwaysApply: false
+---

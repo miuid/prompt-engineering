@@ -1,0 +1,334 @@
+---
+alwaysApply: true
+---
+# Copilot Instructions - Payments One Onboarding UI
+
+## Project Architecture
+
+This is a React SPA built on Xero's SPA Boilerplate, using Redux Toolkit with Redux Sagas for state management. The app guides users through payments platform onboarding.
+
+### Project Structure
+
+```
+src/
+├── actions/           # Redux actions (from boilerplate tools)
+├── api/              # API layer with BFF integration
+├── components/       # React components
+│   ├── functional/   # Reusable functional components
+│   └── routes/       # Route-level components
+├── constants/        # Application constants
+├── events/           # Event definitions
+├── helpers/          # Utility functions and helpers
+├── hooks/           # Custom React hooks
+├── models/          # TypeScript model definitions
+├── reducers/        # Redux reducers (using Redux Toolkit createSlice)
+├── redux/           # Redux store configuration and ports
+├── sagas/           # Redux-Saga middleware
+├── selectors/       # Redux selectors
+├── types/           # TypeScript type definitions
+├── validators/      # Form validation utilities
+├── locales/         # Internationalization files
+└── scss/            # Global styles
+```
+
+### Key Technologies
+
+- **React 18** with React Router 6 for routing
+- **Redux Toolkit (createSlice) + Redux Sagas** for state management
+- **TypeScript** with strict type checking
+- **@xero/spa-boilerplate-tools** for standardized patterns
+- **@xero/xui** for UI components
+- **React Intl** for internationalization
+
+## React Best Practices
+
+### Component Patterns
+
+```tsx
+// Always use function components with hooks (never class components)
+import { componentClassName } from "~helpers";
+export const createClass = componentClassName("ComponentName");
+
+const MyComponent = ({ title, onSave }: IProps) => {
+  // Group hooks by type: state, selectors, callbacks, effects
+  const [isLoading, setIsLoading] = React.useState(false);
+  const document = useSelector(selectors.getDocumentById(id));
+
+  const handleSave = React.useCallback(() => {
+    dispatch(actions.saveDocument(document));
+  }, [document]);
+
+  // Use effects with specific dependencies, add comments for purpose
+  React.useEffect(() => {
+    // Fetch document when component mounts if not already loaded
+    if (!document && !isLoading) {
+      dispatch(actions.fetchDocument(id));
+    }
+  }, [id, document, isLoading]);
+
+  return <div className={createClass()}>{title}</div>;
+};
+export default MyComponent;
+```
+
+### Component Organization
+
+- **Keep components lightweight** - No business logic, only rendering and UI events
+- **API requests only in sagas** - Never in components
+- **No business logic in UI** - push complexity to helper functions or sagas
+- **Follow the single responsibility principle for components** - Each component should handle one specific UI concern
+- **Use collapsible region comments** for complex components:
+
+  ```tsx
+  // region State
+  const [value, setValue] = React.useState();
+  // endregion State
+
+  // region Event handlers
+  const onSave = React.useCallback(() => {}, []);
+  // endregion Event handlers
+  ```
+
+## XUI Design System
+
+### Core Principles
+
+- **Use XUI components exclusively** - Never create custom HTML elements when XUI equivalents exist
+- **XUI react components location** - Search https://github.com/xero-internal/xui/tree/main/src/react for react components documentation and examples
+- **Follow XUI naming conventions** - Components are prefixed with `XUI` (e.g., `XUIButton`, `XUIPanel`)
+- **Import from specific paths** - Use deep imports like `@xero/xui/react/button`
+
+### Common XUI Components
+
+```tsx
+// Layout Components
+import { XUIPanel, XUIPanelSection } from "@xero/xui/react/panel";
+import { XUIPageHeader } from "@xero/xui/react/pageheader";
+
+// Interactive Components
+import XUIButton from "@xero/xui/react/button";
+import XUILoader from "@xero/xui/react/loader";
+
+// Icons
+import XUIIcon from "@xero/xui/react/components/icon/XUIIcon";
+import external from "@xero/xui-icon/icons/external";
+
+// Usage Examples
+<XUIPanel className="xui-page-width-large">
+  <XUIPanelSection className="xui-padding-large">
+    <XUIButton onClick={handleClick}>
+      <FormattedMessage id="SAVE" />
+    </XUIButton>
+  </XUIPanelSection>
+</XUIPanel>
+
+<XUILoader
+  ariaLabel={formatMessage({ id: "LOADING" })}
+  className={createClass("loader")}
+/>
+
+<XUIIcon icon={external} />
+```
+
+### XUI CSS Classes
+
+- **Use XUI utility classes** - `xui-page-width-large`, `xui-padding-large`
+- **XUI sass location** - Search sass variables, minxins, examples from https://github.com/xero-internal/xui/tree/main/src/sass
+- **Use XUI icons location** - Search XUI Icons from https://github.com/xero-internal/xui/
+- **Use CSS Modules for custom styles** - Scope styles locally to the component
+- **Follow responsive patterns** - XUI classes handle responsive design
+
+### Testing XUI Components
+
+```typescript
+// Test by role and accessible name, not by XUI class names
+expect(screen.getByRole("button", { name: "Save" })).toBeDefined();
+
+// For custom identifiers when needed
+expect(screen.getByClassName(createClass("loader"))).toBeDefined();
+
+// Avoid testing XUI internal classes
+// ❌ Don't do: screen.getByClassName("xui-button")
+// ✅ Do: screen.getByRole("button")
+```
+
+## Redux Architecture
+
+### Ports Pattern (Critical)
+
+```typescript
+// API methods injected via configurePorts() in App.tsx
+export const fetchDocuments = (request: TRequest) => async (query: string) => {
+  try {
+    const response = await request("/api/documents", { params: { query } });
+    return success(documentsModel(response.data));
+  } catch (error) {
+    return failure(error);
+  }
+};
+```
+
+### Saga Patterns
+
+```typescript
+// Sagas must be defined with ports injection
+export const fetchDocumentsSaga = ({ api }: TPorts) =>
+  function* (): SagaIterator {
+    yield takeLatest(
+      actions.fetchDocuments,
+      function* ({ payload }): SagaIterator {
+        const response: SagaReturnType<typeof api.fetchDocuments> = yield call(
+          api.fetchDocuments,
+          payload.query,
+        );
+
+        if (response.ok) {
+          yield put(actions.fetchDocumentsDone(response.data));
+        } else {
+          yield put(actions.fetchDocumentsFailed());
+        }
+      },
+    );
+  };
+```
+
+### Selector Patterns
+
+```typescript
+// Always define selectors for store access, use createSelector for memoization
+export const getDocuments = (state: TStoreState) => state.documents.items;
+export const getFilteredDocuments = createSelector(
+  [getDocuments, getSearchQuery],
+  (documents, query) => documents.filter((doc) => doc.title.includes(query)),
+);
+```
+
+## Testing Best Practices
+
+### Component Testing
+
+```typescript
+// Use custom Wrapper class with ports and Redux mocking
+import { Wrapper, screen } from "~test-utils";
+
+const component = new Wrapper(MyComponent)
+  .withDefaultProps({ title: "Test" })
+  .withDefaultReduxState({ documents: { items: [] } });
+
+describe("[components] <MyComponent />", () => {
+  it("renders the component", () => {
+    component.render();
+  });
+
+  // Find by role/text first, use createClass() for custom identifiers
+  it("renders the title", () => {
+    expect(screen.getByText("Test")).toBeDefined();
+  });
+
+  // Use userEvent, not fireEvent
+  it("calls onSave when button clicked", async () => {
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(
+      component.reduxHistory.filter(actions.saveDocument.match),
+    ).toHaveLength(1);
+  });
+});
+```
+
+### Saga Testing
+
+```typescript
+// Use SagaTester for saga testing with full context
+import { SagaTester } from "~test-utils";
+
+const tester = new SagaTester(
+  { documents: { items: [] } }, // Redux state
+  { api: { fetchDocuments: mockWithSuccess([]) } }, // Mock ports
+);
+
+it("dispatches success action when API succeeds", async () => {
+  tester.dispatch(actions.fetchDocuments("query"));
+  await tester.waitFor(actions.fetchDocumentsDone);
+
+  expect(tester.history.filter(actions.fetchDocumentsDone.match)).toHaveLength(
+    1,
+  );
+});
+```
+
+### Testing Principles
+
+- **Test outcomes, not internals** - Assert what renders/dispatches, not implementation details
+- **Use real context** - Never mock hooks or selectors directly
+- **Query by role/text first** - Only use custom identifiers when necessary
+- **Avoid snapshots** - Write explicit assertions for conditional rendering
+- **One test file per component** - Keep tests co-located with components for easier maintenance
+
+## File Organization
+
+### Strict Conventions
+
+- **Routes**: `src/components/routes/[RouteName]/[RouteName].tsx`
+- **Components**: `src/components/functional/[ComponentName]/`
+- **API**: `src/api/[methodName].api.ts`
+- **Redux**: `src/reducers/`, `src/sagas/`, `src/actions/`, `src/selectors/`
+- **Tests**: Co-located as `[Component].test.tsx`
+
+### Import Patterns
+
+```typescript
+// Always use ~ aliases, never relative imports
+import * as actions from "~actions";
+import * as selectors from "~selectors";
+import { componentClassName } from "~helpers";
+import { screen, Wrapper } from "~test-utils";
+```
+
+## Development Workflow
+
+### Implementation Process
+
+- Plan work before implementation
+- Plan component architecture and data flow
+- Always create a `{task}-implementation-plan.md` in the docs directory
+- Review and update the `/docs/{task}-implementation-plan.md` regularly when you perform the implementation
+- Follow current project structure with proper folder organization
+- Define TypeScript interfaces and types if applicable
+- Add state management and data fetching logic if applicable
+- Implement routing and navigation if applicable
+- Add form handling and validation if applicable
+- Implement error handling and loading states if applicable
+- Add testing coverage for components and functionality
+- Optimize performance and bundle size
+- Ensure accessibility compliance
+- Add documentation and code comments
+- Always check .nvmrc for Node version and use the correct version
+- Don't commit everything directly, ask for review first
+
+### Essential Commands
+
+- `yarn start` - Development server with hot reload
+- `yarn test:all` - Run all checks (format, lint, test coverage) before commits
+- `yarn test:coverage` - Jest tests with 100% coverage requirement
+- `yarn lint:fix` - Auto-fix TypeScript and SCSS linting
+- `yarn test:playwright` - End-to-end tests
+
+### Quality Gates
+
+- **100% test coverage** required
+- **No Redux useReducer** - Always use Redux + Sagas for state management
+- **No API calls in components** - Only in sagas via ports
+- **All async logic in sagas** - Components only for rendering and dispatching
+
+## Integration Points
+
+- **Shell.js**: Microfrontend container (auth, navigation, org context)
+- **XUI Design System**: Use XUI components exclusively
+- **LaunchDarkly**: Feature flags via `props.initialFeatures`
+- **Analytics**: Via `props.analytics` from shell
+
+## Critical Constraints
+
+⚠️ **Never modify boilerplate files** - Breaks upgrade automation and support
+⚠️ **No direct Redux store access** - Always use selectors
+⚠️ **Always use ports pattern** - For testability and dependency injection
